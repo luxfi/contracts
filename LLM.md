@@ -4,6 +4,45 @@ Canonical Solidity helpers and interfaces for the Lux EVM. Thin wrappers
 around the native precompiles in `luxfi/precompile`. One source of truth
 for L1 contract authors.
 
+**Latest commit**: `cb13a04` (initial PQAuth library + IPQVerify
+interface + Foundry tests). No tags yet — repo is pre-`v0.1.0`.
+
+## Post-E2E-PQ State (current)
+
+This repo lands the on-chain Solidity surface for the strict-PQ profile:
+
+- `PQAuth.sol` library + concrete `PQVerify` contract — thin wrappers
+  around the ML-DSA / SLH-DSA / Ringtail precompiles.
+- `IPQVerify.sol` interface — what callers depend on. `verifyZAuthProof`
+  is reserved for the tx-type 0x05 PQAuthTx path (Option B in the
+  strict-PQ rollout plan, currently reverts).
+- Foundry test suite (`test/pqauth/PQAuth.t.sol`) uses `vm.etch` to mock
+  the native precompiles, so tests run without a Lux node.
+
+The companion change in `luxfi/geth` provides the
+`vm.SetActiveSecurityProfile` install point and the
+`ErrClassicalAuthForbidden` error path. The on-chain refusal of
+`ecrecover` under `ForbidECDSAContractAuth=true` is geth-side; this repo
+only owns the canonical PQ wrappers.
+
+### Cross-repo dependencies
+- `luxfi/precompile` → native precompile addresses (0x012201..0x012204,
+  0x002221).
+- `luxfi/geth` → `vm.LuxSecurityProfile` install point.
+- `luxfi/consensus/config` → canonical `ChainSecurityProfile`.
+- `luxfi/consensus/protocol/auth/hash.go` → TupleHash256 digest spec
+  (off-chain producer side; on-chain takes precomputed digest).
+
+### Active versions
+- This repo: pre-tag (commit `cb13a04`).
+- Foundry: `solc 0.8.27`, `evm_version=cancun`.
+
+### Where to look for X
+- PQAuth library: `src/pqauth/PQAuth.sol`
+- IPQVerify interface: `src/pqauth/IPQVerify.sol`
+- Foundry tests: `test/pqauth/PQAuth.t.sol`
+- Permit digest convention: see `luxfi/consensus/protocol/auth/hash.go`
+
 ## Layout
 
 ```
